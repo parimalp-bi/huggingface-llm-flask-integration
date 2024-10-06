@@ -1,12 +1,13 @@
-
 from flask import Flask, render_template, request
-import openai
+import requests
 import os
 
 app = Flask(__name__)
 
-# Set your OpenAI API key here
-openai.api_key = os.getenv('api_key')
+# Set your Hugging Face API key here
+api_key = os.getenv('HUGGINGFACE_API_KEY')
+headers = {"Authorization": f"Bearer {api_key}"}
+
 # Home route
 @app.route('/')
 def home():
@@ -17,14 +18,20 @@ def home():
 def get_response():
     user_input = request.form['user_input']
     
-    # Get response from OpenAI API
-    response = openai.Completion.create(
-        engine="gpt-3.5-turbo",  # GPT-3 model
-        prompt=user_input,
-        max_tokens=100
-    )
+    # Hugging Face inference API URL for GPT-Neo model
+    url = "https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-1.3B"
     
-    return response.choices[0].text.strip()
+    payload = {
+        "inputs": user_input,
+        "options": {
+            "wait_for_model": True
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+    result = response.json()
+
+    return result[0]['generated_text']
 
 if __name__ == '__main__':
     app.run(debug=True)
